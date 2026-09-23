@@ -14,7 +14,7 @@ const CATEGORIES: ('All' | MajorCategory)[] = [
   'Core'
 ];
 
-const ITEMS_PER_PAGE = 12;
+const ITEMS_PER_PAGE = 10;
 
 export const ExercisesView: React.FC = () => {
   const { isDark } = useGym();
@@ -95,8 +95,8 @@ export const ExercisesView: React.FC = () => {
         </span>
       </div>
 
-      {/* 2 to 3 Column Card Grid with Muscle Group Visual inside each card */}
-      <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-3">
+      {/* Phone-friendly Single Exercise Per Row List */}
+      <div className="space-y-2.5">
         {paginatedExercises.map(ex => {
           const primarySummary = ex.primaryMuscles
             .map(m => MUSCLE_LABEL_MAP[m] || m)
@@ -107,20 +107,10 @@ export const ExercisesView: React.FC = () => {
               key={ex.id}
               type="button"
               onClick={() => setActiveExercise(ex)}
-              className="text-left p-3.5 rounded-2xl bg-surface-2 dark:bg-surface-2-dark border border-hairline-light/50 dark:border-hairline-dark/50 hover:bg-surface-1 dark:hover:bg-surface-card-dark transition-all duration-150 active:scale-[0.98] flex flex-col justify-between"
+              className="w-full text-left p-3 rounded-2xl bg-surface-2 dark:bg-surface-2-dark border border-hairline-light/50 dark:border-hairline-dark/50 hover:bg-surface-1 dark:hover:bg-surface-card-dark transition-all duration-150 active:scale-[0.99] flex items-center gap-3.5 group shadow-sm"
             >
-              {/* Card Header */}
-              <div className="flex items-center justify-between gap-1 mb-2">
-                <span className="text-[10px] font-medium uppercase tracking-wider text-ink-muted dark:text-ink-dark-muted truncate">
-                  {ex.category}
-                </span>
-                <span className="text-[10px] text-ink-muted dark:text-ink-dark-muted bg-surface-1 dark:bg-surface-card-dark px-1.5 py-0.5 rounded border border-hairline-light/50 dark:border-hairline-dark/50">
-                  {ex.equipment}
-                </span>
-              </div>
-
-              {/* Muscle Group Visual (Compact Body Highlighter) */}
-              <div className="py-2 flex items-center justify-center bg-surface-1/70 dark:bg-surface-card-dark/60 rounded-xl my-1 border border-hairline-light/40 dark:border-hairline-dark/40">
+              {/* Muscle Group Visual (Compact anatomical thumbnail) */}
+              <div className="w-[68px] h-[82px] shrink-0 rounded-xl bg-surface-1 dark:bg-surface-card-dark border border-hairline-light/40 dark:border-hairline-dark/40 flex items-center justify-center overflow-hidden p-1">
                 <MuscleDiagram
                   primaryMuscles={ex.primaryMuscles}
                   secondaryMuscles={ex.secondaryMuscles}
@@ -130,14 +120,35 @@ export const ExercisesView: React.FC = () => {
                 />
               </div>
 
-              {/* Card Footer: Title and Textual Muscle Target */}
-              <div className="mt-2 pt-2 border-t border-hairline-light/40 dark:border-hairline-dark/40">
-                <h3 className="text-[14px] font-semibold text-ink dark:text-ink-dark leading-snug line-clamp-2">
+              {/* Exercise Details */}
+              <div className="flex-1 min-w-0 pr-1">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <span className="text-[10px] font-semibold uppercase tracking-[0.06em] text-ink-muted dark:text-ink-dark-muted">
+                    {ex.category}
+                  </span>
+                  <span className="text-[10px] text-ink-muted/80 dark:text-ink-dark-muted/80 bg-surface-1 dark:bg-surface-card-dark px-1.5 py-0.5 rounded border border-hairline-light/40 dark:border-hairline-dark/40">
+                    {ex.equipment}
+                  </span>
+                </div>
+
+                <h3 className="text-[15px] font-semibold text-ink dark:text-ink-dark leading-tight truncate">
                   {ex.name}
                 </h3>
-                <p className="text-[11px] font-medium text-action dark:text-action-dark truncate mt-0.5">
+
+                <p className="text-[12px] font-medium text-action dark:text-action-dark truncate mt-0.5">
                   {primarySummary}
                 </p>
+
+                <p className="text-[11px] text-ink-muted dark:text-ink-dark-muted truncate mt-0.5">
+                  {ex.defaultSets} sets · {ex.defaultReps} reps · {ex.defaultRestSeconds}s rest
+                </p>
+              </div>
+
+              {/* Right Chevron Indicator */}
+              <div className="shrink-0 text-ink-muted/40 dark:text-ink-dark-muted/40 group-hover:text-ink dark:group-hover:text-ink-dark transition-colors pr-1">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
               </div>
             </button>
           );
