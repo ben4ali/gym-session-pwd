@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { EXERCISE_DATABASE, MUSCLE_LABEL_MAP } from '../data/exercises';
 import { Exercise, MajorCategory } from '../types/gym';
 import { MuscleDiagram } from '../components/common/MuscleDiagram';
+import { ExerciseDetailModal } from '../components/common/ExerciseDetailModal';
 import { useGym } from '../context/GymContext';
 
 const CATEGORIES: ('All' | MajorCategory)[] = [
@@ -110,7 +111,7 @@ export const ExercisesView: React.FC = () => {
               className="w-full text-left p-3 rounded-2xl bg-surface-2 dark:bg-surface-2-dark border border-hairline-light/50 dark:border-hairline-dark/50 hover:bg-surface-1 dark:hover:bg-surface-card-dark transition-all duration-150 active:scale-[0.99] flex items-center gap-3.5 group shadow-sm"
             >
               {/* Muscle Group Visual (Compact anatomical thumbnail) */}
-              <div className="w-[68px] h-[82px] shrink-0 rounded-xl bg-surface-1 dark:bg-surface-card-dark border border-hairline-light/40 dark:border-hairline-dark/40 flex items-center justify-center overflow-hidden p-1">
+              <div className="w-[52px] h-[84px] shrink-0 rounded-xl bg-surface-1 dark:bg-surface-card-dark border border-hairline-light/40 dark:border-hairline-dark/40 flex items-center justify-center p-1">
                 <MuscleDiagram
                   primaryMuscles={ex.primaryMuscles}
                   secondaryMuscles={ex.secondaryMuscles}
@@ -212,98 +213,11 @@ export const ExercisesView: React.FC = () => {
       )}
 
       {/* Detail Modal with Interactive Muscle Visualizer */}
-      {activeExercise && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm">
-          <div className="w-full max-w-[500px] max-h-[90vh] overflow-y-auto rounded-t-3xl sm:rounded-3xl bg-surface-1 dark:bg-surface-1-dark border border-hairline-light dark:border-hairline-dark p-6 shadow-2xl">
-            <div className="w-12 h-1 bg-hairline-light dark:bg-hairline-dark rounded-full mx-auto mb-4 sm:hidden" />
-
-            <div className="flex items-start justify-between">
-              <div>
-                <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-ink-muted dark:text-ink-dark-muted">
-                  {activeExercise.category} · {activeExercise.equipment}
-                </span>
-                <h2 className="text-[24px] font-semibold text-ink dark:text-ink-dark mt-0.5 tracking-tight">
-                  {activeExercise.name}
-                </h2>
-              </div>
-              <button
-                type="button"
-                onClick={() => setActiveExercise(null)}
-                className="w-8 h-8 rounded-full flex items-center justify-center bg-surface-2 dark:bg-surface-2-dark text-ink-muted hover:text-ink"
-              >
-                ✕
-              </button>
-            </div>
-
-            {/* Recommended Protocol */}
-            <div className="grid grid-cols-3 gap-2 my-5 p-3 rounded-xl bg-surface-2 dark:bg-surface-2-dark border border-hairline-light/50 dark:border-hairline-dark/50 text-center">
-              <div>
-                <span className="text-[11px] text-ink-muted dark:text-ink-dark-muted block">Sets</span>
-                <span className="text-[16px] font-semibold text-ink dark:text-ink-dark">{activeExercise.defaultSets}</span>
-              </div>
-              <div>
-                <span className="text-[11px] text-ink-muted dark:text-ink-dark-muted block">Reps</span>
-                <span className="text-[16px] font-semibold text-ink dark:text-ink-dark">{activeExercise.defaultReps}</span>
-              </div>
-              <div>
-                <span className="text-[11px] text-ink-muted dark:text-ink-dark-muted block">Rest</span>
-                <span className="text-[16px] font-semibold text-ink dark:text-ink-dark">{activeExercise.defaultRestSeconds}s</span>
-              </div>
-            </div>
-
-            {/* Visual Muscle Impact Section */}
-            <div className="mb-6 p-4 rounded-2xl bg-surface-2 dark:bg-surface-2-dark border border-hairline-light/50 dark:border-hairline-dark/50">
-              <div className="mb-3">
-                <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-ink-muted dark:text-ink-dark-muted">
-                  Targeted Anatomy
-                </p>
-                <p className="text-[14px] font-medium text-ink dark:text-ink-dark mt-0.5">
-                  Primary: {activeExercise.primaryMuscles.map(m => MUSCLE_LABEL_MAP[m] || m).join(', ')}
-                </p>
-                {activeExercise.secondaryMuscles.length > 0 && (
-                  <p className="text-[12px] text-ink-muted dark:text-ink-dark-muted mt-0.5">
-                    Synergists: {activeExercise.secondaryMuscles.map(m => MUSCLE_LABEL_MAP[m] || m).join(', ')}
-                  </p>
-                )}
-              </div>
-
-              <div className="pt-2 flex justify-center border-t border-hairline-light/40 dark:border-hairline-dark/40">
-                <MuscleDiagram
-                  primaryMuscles={activeExercise.primaryMuscles}
-                  secondaryMuscles={activeExercise.secondaryMuscles}
-                  isDark={isDark}
-                  size="md"
-                />
-              </div>
-            </div>
-
-            {/* Form Instructions */}
-            <div className="mb-6">
-              <h3 className="text-[14px] font-semibold text-ink dark:text-ink-dark mb-2">
-                Execution Instructions
-              </h3>
-              <div className="space-y-2 text-[13px] text-ink dark:text-ink-dark">
-                {activeExercise.instructions.map((step, idx) => (
-                  <div key={idx} className="flex items-start gap-2">
-                    <span className="font-semibold text-ink-muted dark:text-ink-dark-muted">
-                      {idx + 1}.
-                    </span>
-                    <p className="leading-relaxed">{step}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => setActiveExercise(null)}
-              className="w-full py-3.5 rounded-full bg-action dark:bg-action-dark text-white text-[15px] font-normal"
-            >
-              Done
-            </button>
-          </div>
-        </div>
-      )}
+      <ExerciseDetailModal
+        exercise={activeExercise}
+        isOpen={!!activeExercise}
+        onClose={() => setActiveExercise(null)}
+      />
     </div>
   );
 };

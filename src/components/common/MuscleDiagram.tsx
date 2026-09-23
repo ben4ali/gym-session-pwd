@@ -54,24 +54,23 @@ export const MuscleDiagram: React.FC<MuscleDiagramProps> = ({
   const primaryColor = isDark ? '#2997FF' : '#0071E3';
   const secondaryColor = isDark ? '#60A5FA' : '#93C5FD';
 
-  const widthStyle =
-    size === 'xs'
-      ? '82px'
-      : size === 'sm'
-      ? '120px'
-      : size === 'lg'
-      ? '230px'
-      : '160px';
+  // Proportional dimensions matching the 100x200 (1:2 aspect ratio) SVG viewBox
+  const dim = {
+    xs: { width: '38px', height: '76px' },
+    sm: { width: '68px', height: '136px' },
+    md: { width: '105px', height: '210px' },
+    lg: { width: '140px', height: '280px' }
+  }[size];
 
-  // Compact Thumbnail View for Grid Cards
+  // Compact Thumbnail View for row lists and cards
   if (compact) {
     return (
       <div className={`flex flex-col items-center justify-center select-none ${className}`}>
-        <div className="relative flex justify-center items-center py-1 overflow-hidden pointer-events-none">
+        <div className="relative flex justify-center items-center pointer-events-none">
           <Model
             data={[primaryData, secondaryData]}
             type={side || autoSide}
-            style={{ width: widthStyle, height: 'auto' }}
+            style={{ width: dim.width, height: dim.height }}
             highlightedColors={[primaryColor, secondaryColor]}
           />
         </div>
@@ -109,11 +108,11 @@ export const MuscleDiagram: React.FC<MuscleDiagramProps> = ({
       </div>
 
       {/* Model Visual Container */}
-      <div className="relative flex justify-center items-center py-2 px-3 rounded-2xl bg-surface-2/60 dark:bg-surface-2-dark/60 border border-hairline-light/60 dark:border-hairline-dark/60">
+      <div className="relative flex justify-center items-center py-2 px-4 rounded-2xl bg-surface-2/60 dark:bg-surface-2-dark/60 border border-hairline-light/60 dark:border-hairline-dark/60">
         <Model
           data={[primaryData, secondaryData]}
           type={view}
-          style={{ width: widthStyle, height: 'auto' }}
+          style={{ width: dim.width, height: dim.height }}
           highlightedColors={[primaryColor, secondaryColor]}
         />
       </div>

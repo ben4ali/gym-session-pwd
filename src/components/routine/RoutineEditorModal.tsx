@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
-import { Routine, RoutineExercise } from '../../types/gym';
+import { Routine, RoutineExercise, Exercise } from '../../types/gym';
 import { EXERCISE_DATABASE, MUSCLE_LABEL_MAP } from '../../data/exercises';
+import { ExerciseDetailModal } from '../common/ExerciseDetailModal';
+import { MuscleDiagram } from '../common/MuscleDiagram';
+import { useGym } from '../../context/GymContext';
 
 const DAYS_OF_WEEK = [
   { index: 1, name: 'Monday' },
@@ -27,6 +30,7 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
   onSave,
   onDelete
 }) => {
+  const { isDark } = useGym();
   const [name, setName] = useState<string>(initialRoutine?.name || '');
   const [dayOfWeek, setDayOfWeek] = useState<number>(initialRoutine?.dayOfWeek ?? 1);
   const [exercises, setExercises] = useState<RoutineExercise[]>(
@@ -36,6 +40,7 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
   // Exercise picker state
   const [isPickingExercise, setIsPickingExercise] = useState<boolean>(false);
   const [exerciseSearch, setExerciseSearch] = useState<string>('');
+  const [detailExercise, setDetailExercise] = useState<Exercise | null>(null);
 
   if (!isOpen) return null;
 
@@ -231,6 +236,17 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
                         <div className="flex items-center gap-1">
                           <button
                             type="button"
+                            onClick={() => setDetailExercise(def)}
+                            className="w-6 h-6 rounded flex items-center justify-center text-ink-muted hover:text-ink transition-colors mr-0.5"
+                            title="Exercise Info"
+                            aria-label="Exercise Info"
+                          >
+                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                          </button>
+                          <button
+                            type="button"
                             disabled={idx === 0}
                             onClick={() => handleMoveExercise(idx, 'up')}
                             className="w-6 h-6 rounded flex items-center justify-center text-[12px] text-ink-muted hover:text-ink disabled:opacity-20"
@@ -408,31 +424,90 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
               />
             </div>
 
-            <div className="flex-1 overflow-y-auto p-3 space-y-1.5">
-              {filteredCatalog.map(ex => (
-                <button
-                  key={ex.id}
-                  type="button"
-                  onClick={() => handleAddExercise(ex.id)}
-                  className="w-full p-3 text-left rounded-xl bg-surface-2 dark:bg-surface-2-dark border border-hairline-light/40 dark:border-hairline-dark/40 hover:bg-surface-1 dark:hover:bg-surface-1-dark flex items-center justify-between transition-colors"
-                >
-                  <div>
-                    <p className="text-[14px] font-semibold text-ink dark:text-ink-dark">
-                      {ex.name}
-                    </p>
-                    <p className="text-[11px] text-ink-muted dark:text-ink-dark-muted">
-                      {ex.category} · {ex.primaryMuscles.map(m => MUSCLE_LABEL_MAP[m] || m).join(', ')}
-                    </p>
+            <div className="flex-1 overflow-y-auto p-3 space-y-2">
+              {filteredCatalog.map(ex => {
+                const isAdded = exercises.some(e => e.exerciseId === ex.id);
+
+                return (
+                  <div
+                    key={ex.id}
+                    className="p-2.5 rounded-2xl bg-surface-2 dark:bg-surface-2-dark border border-hairline-light/50 dark:border-hairline-dark/50 flex items-center justify-between gap-2.5 hover:bg-surface-1 dark:hover:bg-surface-card-dark transition-colors"
+                  >
+                    {/* Left: Thumbnail and Exercise text - tap opens info card */}
+                    <div
+                      onClick={() => setDetailExercise(ex)}
+                      className="flex items-center gap-2.5 flex-1 min-w-0 cursor-pointer active:opacity-75 transition-opacity"
+                    >
+                      <div className="w-[42px] h-[68px] shrink-0 rounded-xl bg-surface-1 dark:bg-surface-card-dark border border-hairline-light/40 dark:border-hairline-dark/40 flex items-center justify-center p-0.5">
+                        <MuscleDiagram
+                          primaryMuscles={ex.primaryMuscles}
+                          secondaryMuscles={ex.secondaryMuscles}
+                          isDark={isDark}
+                          size="xs"
+                          compact={true}
+                        />
+                      </div>
+
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5 mb-0.5">
+                          <span className="text-[9px] font-semibold uppercase tracking-wider text-ink-muted dark:text-ink-dark-muted">
+                            {ex.category}
+                          </span>
+                          <span className="text-[9px] text-ink-muted/80 dark:text-ink-dark-muted/80 bg-surface-1 dark:bg-surface-card-dark px-1 py-0.5 rounded border border-hairline-light/40 dark:border-hairline-dark/40">
+                            {ex.equipment}
+                          </span>
+                        </div>
+                        <p className="text-[14px] font-semibold text-ink dark:text-ink-dark truncate leading-tight">
+                          {ex.name}
+                        </p>
+                        <p className="text-[11px] text-action dark:text-action-dark truncate mt-0.5">
+                          {ex.primaryMuscles.map(m => MUSCLE_LABEL_MAP[m] || m).join(', ')}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Right: Info button & Add button */}
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => setDetailExercise(ex)}
+                        className="w-8 h-8 rounded-full flex items-center justify-center bg-surface-1 dark:bg-surface-card-dark border border-hairline-light dark:border-hairline-dark text-ink-muted hover:text-ink dark:hover:text-ink-dark transition-colors"
+                        title="Exercise Information"
+                        aria-label="Exercise Information"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleAddExercise(ex.id)}
+                        className={`px-3 py-1.5 rounded-full text-[12px] font-medium transition-all ${
+                          isAdded
+                            ? 'bg-surface-1 dark:bg-surface-card-dark text-ink-muted dark:text-ink-dark-muted border border-hairline-light dark:border-hairline-dark'
+                            : 'bg-action dark:bg-action-dark text-white shadow-sm hover:opacity-90 active:scale-95'
+                        }`}
+                      >
+                        {isAdded ? '+ More' : '+ Add'}
+                      </button>
+                    </div>
                   </div>
-                  <span className="text-[12px] text-action dark:text-action-dark font-medium">
-                    + Add
-                  </span>
-                </button>
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>
       )}
+
+      {/* Exercise Detail Modal with interactive anatomy visualizer */}
+      <ExerciseDetailModal
+        exercise={detailExercise}
+        isOpen={!!detailExercise}
+        onClose={() => setDetailExercise(null)}
+        onAdd={handleAddExercise}
+        isAdded={detailExercise ? exercises.some(e => e.exerciseId === detailExercise.id) : false}
+      />
     </div>
   );
 };

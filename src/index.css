@@ -60,3 +60,18 @@
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(140, 140, 145, 0.4);
 }
+
+/* Ensure react-body-highlighter body diagrams are never clipped */
+.rbh-wrapper {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  overflow: visible !important;
+}
+
+.rbh-wrapper svg.rbh {
+  max-width: 100% !important;
+  max-height: 100% !important;
+  height: auto !important;
+  overflow: visible !important;
+}
