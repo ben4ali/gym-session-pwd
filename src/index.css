@@ -1,0 +1,62 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --color-ink: #1D1D1F;
+    --color-ink-muted: #6E6E73;
+    --color-hairline: #D2D2D7;
+    --color-surface-1: #FFFFFF;
+    --color-surface-2: #F5F5F7;
+    --color-action: #0071E3;
+  }
+
+  .dark {
+    --color-ink: #F5F5F7;
+    --color-ink-muted: #86868B;
+    --color-hairline: #2A2A2C;
+    --color-surface-1: #000000;
+    --color-surface-2: #101010;
+    --color-action: #2997FF;
+  }
+
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Inter", "Helvetica Neue", sans-serif;
+    color: var(--color-ink);
+    background-color: var(--color-surface-1);
+    letter-spacing: -0.01em;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  input, textarea {
+    user-select: text;
+    -webkit-user-select: text;
+  }
+
+  /* Strict typography ceilings per Apple Minimal specification */
+  h1, h2, h3, h4, h5, h6 {
+    font-weight: 600 !important;
+  }
+}
+
+/* Custom minimal scrollbar */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(140, 140, 145, 0.2);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(140, 140, 145, 0.4);
+}
