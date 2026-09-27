@@ -1,8 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Routine, RoutineExercise, Exercise } from '../../types/gym';
 import { EXERCISE_DATABASE, MUSCLE_LABEL_MAP } from '../../data/exercises';
 import { ExerciseDetailModal } from '../common/ExerciseDetailModal';
 import { MuscleDiagram } from '../common/MuscleDiagram';
+import { NumericInput } from '../common/NumericInput';
+import { SwipeToDeleteItem } from '../common/SwipeToDeleteItem';
+import { ConfirmDeleteModal } from '../common/ConfirmDeleteModal';
 import { useGym } from '../../context/GymContext';
 
 const DAYS_OF_WEEK = [
@@ -30,17 +33,42 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
   onSave,
   onDelete
 }) => {
-  const { isDark } = useGym();
-  const [name, setName] = useState<string>(initialRoutine?.name || '');
-  const [dayOfWeek, setDayOfWeek] = useState<number>(initialRoutine?.dayOfWeek ?? 1);
-  const [exercises, setExercises] = useState<RoutineExercise[]>(
-    initialRoutine?.exercises || []
-  );
+  const { isDark, settings } = useGym();
+  const weightUnit = settings.weightUnit || 'lbs';
+  const defaultWeight = weightUnit === 'lbs' ? 45 : 20;
+
+  const [name, setName] = useState<string>('');
+  const [dayOfWeek, setDayOfWeek] = useState<number>(1);
+  const [exercises, setExercises] = useState<RoutineExercise[]>([]);
 
   // Exercise picker state
   const [isPickingExercise, setIsPickingExercise] = useState<boolean>(false);
   const [exerciseSearch, setExerciseSearch] = useState<string>('');
   const [detailExercise, setDetailExercise] = useState<Exercise | null>(null);
+
+  // Deletion modals state
+  const [exerciseToDelete, setExerciseToDelete] = useState<{ id: string; name: string } | null>(null);
+  const [confirmDeleteRoutine, setConfirmDeleteRoutine] = useState<boolean>(false);
+
+  // Synchronize and reset state properly whenever modal opens or initialRoutine changes
+  useEffect(() => {
+    if (isOpen) {
+      if (initialRoutine) {
+        setName(initialRoutine.name || '');
+        setDayOfWeek(initialRoutine.dayOfWeek ?? 1);
+        setExercises(initialRoutine.exercises ? initialRoutine.exercises.map(e => ({ ...e })) : []);
+      } else {
+        setName('');
+        setDayOfWeek(1);
+        setExercises([]);
+      }
+      setIsPickingExercise(false);
+      setExerciseSearch('');
+      setDetailExercise(null);
+      setExerciseToDelete(null);
+      setConfirmDeleteRoutine(false);
+    }
+  }, [isOpen, initialRoutine]);
 
   if (!isOpen) return null;
 
@@ -53,7 +81,7 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
       exerciseId,
       targetSets: def.defaultSets,
       targetReps: def.defaultReps,
-      targetWeightKg: 20,
+      targetWeightKg: defaultWeight,
       restSeconds: def.defaultRestSeconds
     };
 
@@ -127,7 +155,7 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="w-8 h-8 rounded-full flex items-center justify-center bg-surface-2 dark:bg-surface-2-dark text-ink-muted hover:text-ink"
+            className="w-8 h-8 rounded-full flex items-center justify-center bg-surface-2 dark:bg-surface-2-dark text-ink-muted hover:text-ink transition-colors"
           >
             ✕
           </button>
@@ -213,147 +241,132 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
                   if (!def) return null;
 
                   return (
-                    <div
+                    <SwipeToDeleteItem
                       key={re.id}
-                      className="p-3.5 rounded-2xl bg-surface-2 dark:bg-surface-2-dark border border-hairline-light/50 dark:border-hairline-dark/50 space-y-3"
+                      onDeleteRequest={() => setExerciseToDelete({ id: re.id, name: def.name })}
+                      deleteLabel="Remove"
                     >
-                      {/* Title & Reorder/Remove */}
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="w-5 h-5 rounded-full bg-surface-1 dark:bg-surface-card-dark text-[11px] font-medium flex items-center justify-center text-ink-muted">
-                            {idx + 1}
-                          </span>
-                          <div>
-                            <p className="text-[14px] font-semibold text-ink dark:text-ink-dark leading-tight">
-                              {def.name}
-                            </p>
-                            <p className="text-[11px] text-ink-muted dark:text-ink-dark-muted">
-                              {def.category} · {def.primaryMuscles.map(m => MUSCLE_LABEL_MAP[m] || m).join(', ')}
-                            </p>
+                      <div className="p-3.5 rounded-2xl bg-surface-2 dark:bg-surface-2-dark border border-hairline-light/50 dark:border-hairline-dark/50 space-y-3">
+                        {/* Title & Reorder/Remove */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className="w-5 h-5 rounded-full bg-surface-1 dark:bg-surface-card-dark text-[11px] font-medium flex items-center justify-center text-ink-muted">
+                              {idx + 1}
+                            </span>
+                            <div>
+                              <p className="text-[14px] font-semibold text-ink dark:text-ink-dark leading-tight">
+                                {def.name}
+                              </p>
+                              <p className="text-[11px] text-ink-muted dark:text-ink-dark-muted">
+                                {def.category} · {def.primaryMuscles.map(m => MUSCLE_LABEL_MAP[m] || m).join(', ')}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() => setDetailExercise(def)}
+                              className="w-6 h-6 rounded flex items-center justify-center text-ink-muted hover:text-ink transition-colors mr-0.5"
+                              title="Exercise Info"
+                              aria-label="Exercise Info"
+                            >
+                              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                            </button>
+                            <button
+                              type="button"
+                              disabled={idx === 0}
+                              onClick={() => handleMoveExercise(idx, 'up')}
+                              className="w-6 h-6 rounded flex items-center justify-center text-[12px] text-ink-muted hover:text-ink disabled:opacity-20"
+                            >
+                              ▲
+                            </button>
+                            <button
+                              type="button"
+                              disabled={idx === exercises.length - 1}
+                              onClick={() => handleMoveExercise(idx, 'down')}
+                              className="w-6 h-6 rounded flex items-center justify-center text-[12px] text-ink-muted hover:text-ink disabled:opacity-20"
+                            >
+                              ▼
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setExerciseToDelete({ id: re.id, name: def.name })}
+                              className="text-[12px] text-red-500 hover:text-red-700 ml-1 px-1.5"
+                            >
+                              Remove
+                            </button>
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-1">
-                          <button
-                            type="button"
-                            onClick={() => setDetailExercise(def)}
-                            className="w-6 h-6 rounded flex items-center justify-center text-ink-muted hover:text-ink transition-colors mr-0.5"
-                            title="Exercise Info"
-                            aria-label="Exercise Info"
-                          >
-                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                          </button>
-                          <button
-                            type="button"
-                            disabled={idx === 0}
-                            onClick={() => handleMoveExercise(idx, 'up')}
-                            className="w-6 h-6 rounded flex items-center justify-center text-[12px] text-ink-muted hover:text-ink disabled:opacity-20"
-                          >
-                            ▲
-                          </button>
-                          <button
-                            type="button"
-                            disabled={idx === exercises.length - 1}
-                            onClick={() => handleMoveExercise(idx, 'down')}
-                            className="w-6 h-6 rounded flex items-center justify-center text-[12px] text-ink-muted hover:text-ink disabled:opacity-20"
-                          >
-                            ▼
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveExercise(re.id)}
-                            className="text-[12px] text-red-500 hover:text-red-700 ml-1 px-1.5"
-                          >
-                            Remove
-                          </button>
+                        {/* Parameters: Sets, Reps, Weight, Rest */}
+                        <div className="grid grid-cols-4 gap-2 pt-2 border-t border-hairline-light/40 dark:border-hairline-dark/40 text-center">
+                          <div>
+                            <label className="text-[10px] text-ink-muted dark:text-ink-dark-muted uppercase block">
+                              Sets
+                            </label>
+                            <NumericInput
+                              value={re.targetSets}
+                              min={1}
+                              max={20}
+                              fallback={1}
+                              allowDecimal={false}
+                              onChange={val => handleUpdateExerciseParam(re.id, 'targetSets', val)}
+                              className="w-full mt-0.5 py-1 text-center text-[13px] font-medium rounded-lg bg-surface-1 dark:bg-surface-card-dark border border-hairline-light/60 dark:border-hairline-dark/60 text-ink dark:text-ink-dark"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="text-[10px] text-ink-muted dark:text-ink-dark-muted uppercase block">
+                              Reps
+                            </label>
+                            <NumericInput
+                              value={re.targetReps}
+                              min={1}
+                              max={100}
+                              fallback={10}
+                              allowDecimal={false}
+                              onChange={val => handleUpdateExerciseParam(re.id, 'targetReps', val)}
+                              className="w-full mt-0.5 py-1 text-center text-[13px] font-medium rounded-lg bg-surface-1 dark:bg-surface-card-dark border border-hairline-light/60 dark:border-hairline-dark/60 text-ink dark:text-ink-dark"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="text-[10px] text-ink-muted dark:text-ink-dark-muted uppercase block">
+                              Weight ({weightUnit})
+                            </label>
+                            <NumericInput
+                              value={re.targetWeightKg}
+                              min={0}
+                              max={1500}
+                              step={weightUnit === 'lbs' ? 5 : 2.5}
+                              fallback={0}
+                              allowDecimal={true}
+                              onChange={val => handleUpdateExerciseParam(re.id, 'targetWeightKg', val)}
+                              className="w-full mt-0.5 py-1 text-center text-[13px] font-medium rounded-lg bg-surface-1 dark:bg-surface-card-dark border border-hairline-light/60 dark:border-hairline-dark/60 text-ink dark:text-ink-dark"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="text-[10px] text-ink-muted dark:text-ink-dark-muted uppercase block">
+                              Rest (sec)
+                            </label>
+                            <NumericInput
+                              value={re.restSeconds}
+                              min={5}
+                              max={600}
+                              step={15}
+                              fallback={60}
+                              allowDecimal={false}
+                              onChange={val => handleUpdateExerciseParam(re.id, 'restSeconds', val)}
+                              className="w-full mt-0.5 py-1 text-center text-[13px] font-medium rounded-lg bg-surface-1 dark:bg-surface-card-dark border border-hairline-light/60 dark:border-hairline-dark/60 text-ink dark:text-ink-dark"
+                            />
+                          </div>
                         </div>
                       </div>
-
-                      {/* Parameters: Sets, Reps, Weight, Rest */}
-                      <div className="grid grid-cols-4 gap-2 pt-2 border-t border-hairline-light/40 dark:border-hairline-dark/40 text-center">
-                        <div>
-                          <label className="text-[10px] text-ink-muted dark:text-ink-dark-muted uppercase block">
-                            Sets
-                          </label>
-                          <input
-                            type="number"
-                            min="1"
-                            max="20"
-                            value={re.targetSets}
-                            onChange={e =>
-                              handleUpdateExerciseParam(
-                                re.id,
-                                'targetSets',
-                                parseInt(e.target.value, 10) || 1
-                              )
-                            }
-                            className="w-full mt-0.5 py-1 text-center text-[13px] font-medium rounded-lg bg-surface-1 dark:bg-surface-card-dark border border-hairline-light/60 dark:border-hairline-dark/60 text-ink dark:text-ink-dark"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="text-[10px] text-ink-muted dark:text-ink-dark-muted uppercase block">
-                            Reps
-                          </label>
-                          <input
-                            type="number"
-                            min="1"
-                            max="100"
-                            value={re.targetReps}
-                            onChange={e =>
-                              handleUpdateExerciseParam(
-                                re.id,
-                                'targetReps',
-                                parseInt(e.target.value, 10) || 1
-                              )
-                            }
-                            className="w-full mt-0.5 py-1 text-center text-[13px] font-medium rounded-lg bg-surface-1 dark:bg-surface-card-dark border border-hairline-light/60 dark:border-hairline-dark/60 text-ink dark:text-ink-dark"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="text-[10px] text-ink-muted dark:text-ink-dark-muted uppercase block">
-                            Weight (kg)
-                          </label>
-                          <input
-                            type="number"
-                            min="0"
-                            step="2.5"
-                            value={re.targetWeightKg}
-                            onChange={e =>
-                              handleUpdateExerciseParam(
-                                re.id,
-                                'targetWeightKg',
-                                parseFloat(e.target.value) || 0
-                              )
-                            }
-                            className="w-full mt-0.5 py-1 text-center text-[13px] font-medium rounded-lg bg-surface-1 dark:bg-surface-card-dark border border-hairline-light/60 dark:border-hairline-dark/60 text-ink dark:text-ink-dark"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="text-[10px] text-ink-muted dark:text-ink-dark-muted uppercase block">
-                            Rest (sec)
-                          </label>
-                          <input
-                            type="number"
-                            min="15"
-                            step="15"
-                            value={re.restSeconds}
-                            onChange={e =>
-                              handleUpdateExerciseParam(
-                                re.id,
-                                'restSeconds',
-                                parseInt(e.target.value, 10) || 60
-                              )
-                            }
-                            className="w-full mt-0.5 py-1 text-center text-[13px] font-medium rounded-lg bg-surface-1 dark:bg-surface-card-dark border border-hairline-light/60 dark:border-hairline-dark/60 text-ink dark:text-ink-dark"
-                          />
-                        </div>
-                      </div>
-                    </div>
+                    </SwipeToDeleteItem>
                   );
                 })}
               </div>
@@ -366,13 +379,8 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
           {initialRoutine && onDelete && (
             <button
               type="button"
-              onClick={() => {
-                if (window.confirm('Delete this routine?')) {
-                  onDelete(initialRoutine.id);
-                  onClose();
-                }
-              }}
-              className="py-3 px-4 text-[13px] font-medium text-red-600 hover:text-red-700"
+              onClick={() => setConfirmDeleteRoutine(true)}
+              className="py-3 px-4 text-[13px] font-medium text-red-600 hover:text-red-700 transition-colors"
             >
               Delete Routine
             </button>
@@ -382,14 +390,14 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="py-2.5 px-4 text-[14px] rounded-full border border-hairline-light dark:border-hairline-dark text-ink dark:text-ink-dark"
+              className="py-2.5 px-4 text-[14px] rounded-full border border-hairline-light dark:border-hairline-dark text-ink dark:text-ink-dark hover:bg-surface-2 dark:hover:bg-surface-2-dark transition-colors"
             >
               Cancel
             </button>
             <button
               type="button"
               onClick={handleSave}
-              className="py-2.5 px-6 rounded-full bg-action dark:bg-action-dark text-white text-[14px] font-normal shadow-sm"
+              className="py-2.5 px-6 rounded-full bg-action dark:bg-action-dark text-white text-[14px] font-normal shadow-sm hover:opacity-90 active:scale-95 transition-all"
             >
               Save Routine
             </button>
@@ -507,6 +515,39 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
         onClose={() => setDetailExercise(null)}
         onAdd={handleAddExercise}
         isAdded={detailExercise ? exercises.some(e => e.exerciseId === detailExercise.id) : false}
+      />
+
+      {/* Remove Exercise Confirmation Modal */}
+      <ConfirmDeleteModal
+        isOpen={!!exerciseToDelete}
+        title="Remove Exercise?"
+        itemName={exerciseToDelete?.name}
+        message="Are you sure you want to remove this exercise from your workout routine?"
+        confirmText="Remove"
+        onConfirm={() => {
+          if (exerciseToDelete) {
+            handleRemoveExercise(exerciseToDelete.id);
+            setExerciseToDelete(null);
+          }
+        }}
+        onCancel={() => setExerciseToDelete(null)}
+      />
+
+      {/* Delete Routine Confirmation Modal */}
+      <ConfirmDeleteModal
+        isOpen={confirmDeleteRoutine}
+        title="Delete Workout Routine?"
+        itemName={name || initialRoutine?.name}
+        message="This will permanently delete this routine schedule. This action cannot be undone."
+        confirmText="Delete Routine"
+        onConfirm={() => {
+          if (initialRoutine && onDelete) {
+            onDelete(initialRoutine.id);
+            setConfirmDeleteRoutine(false);
+            onClose();
+          }
+        }}
+        onCancel={() => setConfirmDeleteRoutine(false)}
       />
     </div>
   );

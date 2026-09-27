@@ -204,7 +204,7 @@ export const TodayView: React.FC<TodayViewProps> = ({ onNavigateToActive }) => {
                         {re.targetSets} × {re.targetReps}
                       </p>
                       <p className="text-[11px] text-ink-muted dark:text-ink-dark-muted">
-                        {re.targetWeightKg > 0 ? `${re.targetWeightKg}kg · ` : ''}{re.restSeconds}s rest
+                        {re.targetWeightKg > 0 ? `${re.targetWeightKg}${settings.weightUnit || 'lbs'} · ` : ''}{re.restSeconds}s rest
                       </p>
                     </div>
                   </div>

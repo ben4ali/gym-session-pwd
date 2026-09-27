@@ -1,10 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useGym } from '../context/GymContext';
 import { MUSCLE_LABEL_MAP } from '../data/exercises';
-import { MuscleToken } from '../types/gym';
+import { MuscleToken, CompletedSessionLog } from '../types/gym';
+import { SwipeToDeleteItem } from '../components/common/SwipeToDeleteItem';
+import { ConfirmDeleteModal } from '../components/common/ConfirmDeleteModal';
 
 export const DashboardView: React.FC = () => {
-  const { history, settings } = useGym();
+  const { history, settings, deleteHistorySession } = useGym();
+  const [sessionToDelete, setSessionToDelete] = useState<CompletedSessionLog | null>(null);
 
   // Metrics calculation
   const totalWorkouts = history.length;
@@ -160,32 +163,52 @@ export const DashboardView: React.FC = () => {
 
       {/* Recent Activity Log */}
       <div>
-        <h2 className="text-[15px] font-semibold text-ink dark:text-ink-dark mb-3">
-          Recent Activity
-        </h2>
+        <div className="flex items-baseline justify-between mb-3">
+          <h2 className="text-[15px] font-semibold text-ink dark:text-ink-dark">
+            Recent Activity ({history.length})
+          </h2>
+          <span className="text-[11px] text-ink-muted dark:text-ink-dark-muted">
+            Slide left to delete
+          </span>
+        </div>
+
         {history.length > 0 ? (
           <div className="space-y-2.5">
-            {history.slice(0, 5).map(session => (
-              <div
+            {history.map(session => (
+              <SwipeToDeleteItem
                 key={session.id}
-                className="p-4 rounded-xl bg-surface-2 dark:bg-surface-2-dark border border-hairline-light/40 dark:border-hairline-dark/40 flex items-center justify-between"
+                onDeleteRequest={() => setSessionToDelete(session)}
+                deleteLabel="Delete"
               >
-                <div>
-                  <p className="text-[14px] font-semibold text-ink dark:text-ink-dark">
-                    {session.routineName}
-                  </p>
-                  <p className="text-[12px] text-ink-muted dark:text-ink-dark-muted mt-0.5">
-                    {new Date(session.date + 'T12:00:00').toLocaleDateString('en-US', {
-                      month: 'short',
-                      day: 'numeric'
-                    })}{' '}
-                    · {session.totalSetsCompleted} sets
-                  </p>
+                <div className="p-4 rounded-xl bg-surface-2 dark:bg-surface-2-dark border border-hairline-light/40 dark:border-hairline-dark/40 flex items-center justify-between">
+                  <div>
+                    <p className="text-[14px] font-semibold text-ink dark:text-ink-dark">
+                      {session.routineName}
+                    </p>
+                    <p className="text-[12px] text-ink-muted dark:text-ink-dark-muted mt-0.5">
+                      {new Date(session.date + 'T12:00:00').toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric'
+                      })}{' '}
+                      · {session.totalSetsCompleted} sets
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-[13px] font-mono text-ink-muted dark:text-ink-dark-muted">
+                      {session.durationMinutes}m
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setSessionToDelete(session)}
+                      className="text-ink-muted hover:text-red-500 transition-colors p-1"
+                      aria-label="Delete session"
+                      title="Delete session"
+                    >
+                      <span className="text-[12px]">✕</span>
+                    </button>
+                  </div>
                 </div>
-                <span className="text-[13px] font-mono text-ink-muted dark:text-ink-dark-muted">
-                  {session.durationMinutes}m
-                </span>
-              </div>
+              </SwipeToDeleteItem>
             ))}
           </div>
         ) : (
@@ -196,6 +219,26 @@ export const DashboardView: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Confirm Delete Session Modal */}
+      <ConfirmDeleteModal
+        isOpen={!!sessionToDelete}
+        title="Delete Workout Session?"
+        itemName={
+          sessionToDelete
+            ? `${sessionToDelete.routineName} (${new Date(sessionToDelete.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })})`
+            : undefined
+        }
+        message="Are you sure you want to delete this completed workout from your history? This cannot be undone."
+        confirmText="Delete"
+        onConfirm={() => {
+          if (sessionToDelete) {
+            deleteHistorySession(sessionToDelete.id);
+            setSessionToDelete(null);
+          }
+        }}
+        onCancel={() => setSessionToDelete(null)}
+      />
     </div>
   );
 };

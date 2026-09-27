@@ -1,13 +1,16 @@
 import React, { useState } from 'react';
 import { useGym } from '../context/GymContext';
 import { CompletedSessionLog } from '../types/gym';
+import { SwipeToDeleteItem } from '../components/common/SwipeToDeleteItem';
+import { ConfirmDeleteModal } from '../components/common/ConfirmDeleteModal';
 
 export const CalendarView: React.FC = () => {
-  const { settings, history, routines } = useGym();
+  const { settings, history, routines, deleteHistorySession } = useGym();
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
   const [selectedDateStr, setSelectedDateStr] = useState<string>(
     new Date().toISOString().split('T')[0]
   );
+  const [sessionToDelete, setSessionToDelete] = useState<CompletedSessionLog | null>(null);
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
@@ -189,34 +192,47 @@ export const CalendarView: React.FC = () => {
         {selectedDateLogs.length > 0 ? (
           <div className="space-y-3">
             {selectedDateLogs.map((log: CompletedSessionLog) => (
-              <div
+              <SwipeToDeleteItem
                 key={log.id}
-                className="p-4 rounded-xl bg-surface-2 dark:bg-surface-2-dark border border-hairline-light/50 dark:border-hairline-dark/50"
+                onDeleteRequest={() => setSessionToDelete(log)}
+                deleteLabel="Delete"
               >
-                <div className="flex items-baseline justify-between">
-                  <h3 className="text-[16px] font-semibold text-ink dark:text-ink-dark">
-                    {log.routineName}
-                  </h3>
-                  <span className="text-[12px] font-mono text-ink-muted dark:text-ink-dark-muted">
-                    {log.durationMinutes} min
-                  </span>
-                </div>
-
-                <p className="text-[12px] text-ink-muted dark:text-ink-dark-muted mt-1">
-                  {log.totalSetsCompleted} sets completed across {log.exercisesCompleted.length} exercises
-                </p>
-
-                <div className="mt-3 pt-3 border-t border-hairline-light/40 dark:border-hairline-dark/40 space-y-1.5">
-                  {log.exercisesCompleted.map((ex, idx) => (
-                    <div key={idx} className="flex items-center justify-between text-[13px]">
-                      <span className="text-ink dark:text-ink-dark">{ex.exerciseName}</span>
-                      <span className="text-ink-muted dark:text-ink-dark-muted">
-                        {ex.setsCompleted} sets
+                <div className="p-4 rounded-xl bg-surface-2 dark:bg-surface-2-dark border border-hairline-light/50 dark:border-hairline-dark/50">
+                  <div className="flex items-baseline justify-between">
+                    <h3 className="text-[16px] font-semibold text-ink dark:text-ink-dark">
+                      {log.routineName}
+                    </h3>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[12px] font-mono text-ink-muted dark:text-ink-dark-muted">
+                        {log.durationMinutes} min
                       </span>
+                      <button
+                        type="button"
+                        onClick={() => setSessionToDelete(log)}
+                        className="text-ink-muted hover:text-red-500 transition-colors p-1"
+                        aria-label="Delete session"
+                      >
+                        ✕
+                      </button>
                     </div>
-                  ))}
+                  </div>
+
+                  <p className="text-[12px] text-ink-muted dark:text-ink-dark-muted mt-1">
+                    {log.totalSetsCompleted} sets completed across {log.exercisesCompleted.length} exercises
+                  </p>
+
+                  <div className="mt-3 pt-3 border-t border-hairline-light/40 dark:border-hairline-dark/40 space-y-1.5">
+                    {log.exercisesCompleted.map((ex, idx) => (
+                      <div key={idx} className="flex items-center justify-between text-[13px]">
+                        <span className="text-ink dark:text-ink-dark">{ex.exerciseName}</span>
+                        <span className="text-ink-muted dark:text-ink-dark-muted">
+                          {ex.setsCompleted} sets
+                        </span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              </SwipeToDeleteItem>
             ))}
           </div>
         ) : (
@@ -232,6 +248,26 @@ export const CalendarView: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Confirm Delete Session Modal */}
+      <ConfirmDeleteModal
+        isOpen={!!sessionToDelete}
+        title="Delete Workout Session?"
+        itemName={
+          sessionToDelete
+            ? `${sessionToDelete.routineName} (${new Date(sessionToDelete.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })})`
+            : undefined
+        }
+        message="Are you sure you want to delete this completed workout from your history? This cannot be undone."
+        confirmText="Delete"
+        onConfirm={() => {
+          if (sessionToDelete) {
+            deleteHistorySession(sessionToDelete.id);
+            setSessionToDelete(null);
+          }
+        }}
+        onCancel={() => setSessionToDelete(null)}
+      />
     </div>
   );
 };

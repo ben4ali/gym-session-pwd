@@ -77,6 +77,7 @@ export interface CompletedSessionLog {
 export interface UserSettings {
   gymDays: number[]; // e.g. [1, 3, 5] for Mon, Wed, Fri
   theme: 'light' | 'dark';
+  weightUnit: 'lbs' | 'kg';
   defaultRestSeconds: number;
   soundEnabled: boolean;
   dailyCreatineGrams: number;

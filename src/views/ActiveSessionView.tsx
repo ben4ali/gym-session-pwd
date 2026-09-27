@@ -5,6 +5,9 @@ import { EXERCISE_DATABASE, MUSCLE_LABEL_MAP } from '../data/exercises';
 import { MuscleDiagram } from '../components/common/MuscleDiagram';
 import { useRestTimer } from '../hooks/useRestTimer';
 import { RoutineEditorModal } from '../components/routine/RoutineEditorModal';
+import { NumericInput } from '../components/common/NumericInput';
+import { SwipeToDeleteItem } from '../components/common/SwipeToDeleteItem';
+import { ConfirmDeleteModal } from '../components/common/ConfirmDeleteModal';
 import { Routine } from '../types/gym';
 import { fireExerciseConfetti, fireSessionCompleteConfetti } from '../utils/confetti';
 
@@ -18,6 +21,7 @@ export const ActiveSessionView: React.FC<ActiveSessionViewProps> = ({ onSessionF
   const {
     activeSession,
     routines,
+    settings,
     startSession,
     completeSet,
     updateSetValues,
@@ -28,6 +32,8 @@ export const ActiveSessionView: React.FC<ActiveSessionViewProps> = ({ onSessionF
     deleteRoutine,
     isDark
   } = useGym();
+
+  const weightUnit = settings.weightUnit || 'lbs';
 
   const [activeTab, setActiveTab] = useState<'flow' | 'overview'>('flow');
   const [elapsedSeconds, setElapsedSeconds] = useState<number>(0);
@@ -41,6 +47,7 @@ export const ActiveSessionView: React.FC<ActiveSessionViewProps> = ({ onSessionF
   // Routine editor modal state
   const [isEditorOpen, setIsEditorOpen] = useState<boolean>(false);
   const [editingRoutine, setEditingRoutine] = useState<Routine | null>(null);
+  const [routineToDelete, setRoutineToDelete] = useState<Routine | null>(null);
 
   // Rest timer
   const {
@@ -105,7 +112,7 @@ export const ActiveSessionView: React.FC<ActiveSessionViewProps> = ({ onSessionF
             Workout Schedules
           </h2>
           <p className="text-[13px] text-ink-muted dark:text-ink-dark-muted mt-1 leading-relaxed">
-            Create or edit your gym day schedules, pick exercises from the library, set target sets, reps, weight, and rest durations.
+            Create or edit your gym day schedules, pick exercises from the library, set target sets, reps, weight ({weightUnit}), and rest durations.
           </p>
           <button
             type="button"
@@ -113,7 +120,7 @@ export const ActiveSessionView: React.FC<ActiveSessionViewProps> = ({ onSessionF
               setEditingRoutine(null);
               setIsEditorOpen(true);
             }}
-            className="w-full mt-4 py-3.5 px-5 rounded-full bg-action dark:bg-action-dark text-white text-[15px] font-normal transition-all active:scale-[0.98] shadow-sm"
+            className="w-full mt-4 py-3.5 px-5 rounded-full bg-action dark:bg-action-dark text-white text-[15px] font-normal transition-all active:scale-[0.98] shadow-sm hover:opacity-90"
           >
             + Create Workout Schedule
           </button>
@@ -125,6 +132,11 @@ export const ActiveSessionView: React.FC<ActiveSessionViewProps> = ({ onSessionF
             <h3 className="text-[15px] font-semibold text-ink dark:text-ink-dark">
               Available Routines ({routines.length})
             </h3>
+            {routines.length > 0 && (
+              <span className="text-[11px] text-ink-muted dark:text-ink-dark-muted">
+                Slide left to delete
+              </span>
+            )}
           </div>
 
           {routines.length === 0 ? (
@@ -141,45 +153,58 @@ export const ActiveSessionView: React.FC<ActiveSessionViewProps> = ({ onSessionF
               {routines.map(r => {
                 const dayName = DAYS_NAMES[r.dayOfWeek];
                 return (
-                  <div
+                  <SwipeToDeleteItem
                     key={r.id}
-                    className="p-4 rounded-2xl bg-surface-2 dark:bg-surface-2-dark border border-hairline-light/50 dark:border-hairline-dark/50 space-y-3"
+                    onDeleteRequest={() => setRoutineToDelete(r)}
+                    deleteLabel="Delete"
                   >
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <span className="text-[11px] font-medium uppercase tracking-wider text-action dark:text-action-dark">
-                          {dayName}
-                        </span>
-                        <h4 className="text-[17px] font-semibold text-ink dark:text-ink-dark mt-0.5">
-                          {r.name}
-                        </h4>
-                        <p className="text-[12px] text-ink-muted dark:text-ink-dark-muted mt-0.5">
-                          {r.exercises.length} exercises configured
-                        </p>
+                    <div className="p-4 rounded-2xl bg-surface-2 dark:bg-surface-2-dark border border-hairline-light/50 dark:border-hairline-dark/50 space-y-3">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <span className="text-[11px] font-medium uppercase tracking-wider text-action dark:text-action-dark">
+                            {dayName}
+                          </span>
+                          <h4 className="text-[17px] font-semibold text-ink dark:text-ink-dark mt-0.5">
+                            {r.name}
+                          </h4>
+                          <p className="text-[12px] text-ink-muted dark:text-ink-dark-muted mt-0.5">
+                            {r.exercises.length} exercises configured
+                          </p>
+                        </div>
+
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingRoutine(r);
+                              setIsEditorOpen(true);
+                            }}
+                            className="text-[12px] text-action dark:text-action-dark font-medium px-2 py-1 hover:bg-action/10 rounded-lg transition-colors"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setRoutineToDelete(r)}
+                            className="text-ink-muted hover:text-red-500 transition-colors p-1"
+                            aria-label="Delete routine"
+                          >
+                            ✕
+                          </button>
+                        </div>
                       </div>
 
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setEditingRoutine(r);
-                          setIsEditorOpen(true);
-                        }}
-                        className="text-[12px] text-action dark:text-action-dark font-medium px-2 py-1"
-                      >
-                        Edit
-                      </button>
+                      <div className="pt-2 border-t border-hairline-light/40 dark:border-hairline-dark/40 flex items-center justify-between">
+                        <button
+                          type="button"
+                          onClick={() => startSession(r.id)}
+                          className="w-full py-2.5 rounded-full bg-ink text-white dark:bg-ink-dark dark:text-black text-[13px] font-medium transition-all hover:opacity-90 active:scale-98"
+                        >
+                          Start {r.name}
+                        </button>
+                      </div>
                     </div>
-
-                    <div className="pt-2 border-t border-hairline-light/40 dark:border-hairline-dark/40 flex items-center justify-between">
-                      <button
-                        type="button"
-                        onClick={() => startSession(r.id)}
-                        className="w-full py-2.5 rounded-full bg-ink text-white dark:bg-ink-dark dark:text-black text-[13px] font-medium transition-all"
-                      >
-                        Start {r.name}
-                      </button>
-                    </div>
-                  </div>
+                  </SwipeToDeleteItem>
                 );
               })}
             </div>
@@ -196,6 +221,22 @@ export const ActiveSessionView: React.FC<ActiveSessionViewProps> = ({ onSessionF
           }}
           onSave={createOrUpdateRoutine}
           onDelete={deleteRoutine}
+        />
+
+        {/* Delete Routine Confirmation Modal */}
+        <ConfirmDeleteModal
+          isOpen={!!routineToDelete}
+          title="Delete Workout Routine?"
+          itemName={routineToDelete?.name}
+          message="Are you sure you want to delete this workout schedule? This action cannot be undone."
+          confirmText="Delete Routine"
+          onConfirm={() => {
+            if (routineToDelete) {
+              deleteRoutine(routineToDelete.id);
+              setRoutineToDelete(null);
+            }
+          }}
+          onCancel={() => setRoutineToDelete(null)}
         />
       </div>
     );
@@ -385,14 +426,14 @@ export const ActiveSessionView: React.FC<ActiveSessionViewProps> = ({ onSessionF
                 cancelSession();
                 setConfirmCancel(false);
               }}
-              className="px-4 py-1.5 text-[13px] rounded-full bg-red-600 text-white font-medium"
+              className="px-4 py-1.5 text-[13px] rounded-full bg-red-600 text-white font-medium hover:bg-red-700 transition-colors"
             >
               Discard Session
             </button>
             <button
               type="button"
               onClick={() => setConfirmCancel(false)}
-              className="px-4 py-1.5 text-[13px] rounded-full bg-surface-1 dark:bg-surface-card-dark text-ink dark:text-ink-dark border border-hairline-light dark:border-hairline-dark"
+              className="px-4 py-1.5 text-[13px] rounded-full bg-surface-1 dark:bg-surface-card-dark text-ink dark:text-ink-dark border border-hairline-light dark:border-hairline-dark hover:bg-hairline-light/30 transition-colors"
             >
               Keep Going
             </button>
@@ -501,7 +542,7 @@ export const ActiveSessionView: React.FC<ActiveSessionViewProps> = ({ onSessionF
                   <div className="flex items-center justify-between mb-4">
                     <div>
                       <span className="text-[11px] font-medium uppercase tracking-wider text-action dark:text-action-dark">
-                        {activeSetIndex === totalSets - 1 ? 'Final Set of Exercise' : 'Target Target Protocol'}
+                        {activeSetIndex === totalSets - 1 ? 'Final Set of Exercise' : 'Target Protocol'}
                       </span>
                       <h3 className="text-[20px] font-semibold text-ink dark:text-ink-dark mt-0.5">
                         Set {activeSetIndex + 1} of {totalSets}
@@ -513,28 +554,31 @@ export const ActiveSessionView: React.FC<ActiveSessionViewProps> = ({ onSessionF
                     </span>
                   </div>
 
-                  {/* Weight and Reps Adjustment */}
+                  {/* Weight and Reps Adjustment with Ergonomic NumericInput */}
                   <div className="grid grid-cols-2 gap-3 mb-6">
                     <div className="p-3 rounded-2xl bg-surface-2 dark:bg-surface-2-dark border border-hairline-light/50 dark:border-hairline-dark/50 text-center">
                       <span className="text-[11px] text-ink-muted dark:text-ink-dark-muted uppercase font-medium block">
                         Weight
                       </span>
                       <div className="flex items-center justify-center gap-1 mt-1">
-                        <input
-                          type="number"
-                          step="2.5"
+                        <NumericInput
                           value={currentSet.weightKg}
-                          onChange={e =>
+                          min={0}
+                          max={1500}
+                          step={weightUnit === 'lbs' ? 5 : 2.5}
+                          fallback={0}
+                          allowDecimal={true}
+                          onChange={val =>
                             updateSetValues(
                               activeSession.currentExerciseIndex,
                               activeSetIndex,
-                              parseFloat(e.target.value) || 0,
+                              val,
                               currentSet.targetReps
                             )
                           }
-                          className="w-16 text-center text-[22px] font-semibold bg-transparent text-ink dark:text-ink-dark focus:outline-none"
+                          className="w-20 text-center text-[22px] font-semibold bg-transparent text-ink dark:text-ink-dark focus:outline-none border-b border-transparent focus:border-action"
                         />
-                        <span className="text-[14px] font-medium text-ink-muted">kg</span>
+                        <span className="text-[14px] font-medium text-ink-muted">{weightUnit}</span>
                       </div>
                     </div>
 
@@ -543,18 +587,21 @@ export const ActiveSessionView: React.FC<ActiveSessionViewProps> = ({ onSessionF
                         Target Reps
                       </span>
                       <div className="flex items-center justify-center gap-1 mt-1">
-                        <input
-                          type="number"
+                        <NumericInput
                           value={currentSet.targetReps}
-                          onChange={e =>
+                          min={1}
+                          max={100}
+                          fallback={10}
+                          allowDecimal={false}
+                          onChange={val =>
                             updateSetValues(
                               activeSession.currentExerciseIndex,
                               activeSetIndex,
                               currentSet.weightKg,
-                              parseInt(e.target.value, 10) || 0
+                              val
                             )
                           }
-                          className="w-16 text-center text-[22px] font-semibold bg-transparent text-ink dark:text-ink-dark focus:outline-none"
+                          className="w-20 text-center text-[22px] font-semibold bg-transparent text-ink dark:text-ink-dark focus:outline-none border-b border-transparent focus:border-action"
                         />
                         <span className="text-[14px] font-medium text-ink-muted">reps</span>
                       </div>
@@ -584,7 +631,7 @@ export const ActiveSessionView: React.FC<ActiveSessionViewProps> = ({ onSessionF
               </motion.div>
             )}
 
-            {/* 2. CIRCULAR TIMER SLIDE CARD */}
+            {/* 2. CIRCULAR TIMER SLIDE CARD WITH -10s AND +30s */}
             {stepMode === 'rest' && (
               <motion.div
                 key={`rest-${activeSession.currentExerciseIndex}-${activeSetIndex}`}
@@ -645,12 +692,22 @@ export const ActiveSessionView: React.FC<ActiveSessionViewProps> = ({ onSessionF
                   </div>
                 </div>
 
-                {/* Rest Controller Buttons */}
-                <div className="flex items-center justify-center gap-3 w-full pt-2">
+                {/* Rest Controller Buttons: -10s, +30s, Pause/Resume, Skip */}
+                <div className="grid grid-cols-4 gap-2 w-full pt-2">
+                  <button
+                    type="button"
+                    onClick={() => adjustTime(-10)}
+                    className="py-3 px-2 rounded-full bg-surface-1 dark:bg-surface-card-dark text-[13px] font-semibold text-ink dark:text-ink-dark border border-hairline-light dark:border-hairline-dark hover:bg-hairline-light/30 active:scale-95 transition-all"
+                    title="Remove 10 seconds"
+                  >
+                    -10s
+                  </button>
+
                   <button
                     type="button"
                     onClick={() => adjustTime(30)}
-                    className="flex-1 py-3 px-3 rounded-full bg-surface-1 dark:bg-surface-card-dark text-[13px] font-medium text-ink dark:text-ink-dark border border-hairline-light dark:border-hairline-dark hover:bg-hairline-light/30 transition-colors"
+                    className="py-3 px-2 rounded-full bg-surface-1 dark:bg-surface-card-dark text-[13px] font-semibold text-ink dark:text-ink-dark border border-hairline-light dark:border-hairline-dark hover:bg-hairline-light/30 active:scale-95 transition-all"
+                    title="Add 30 seconds"
                   >
                     +30s
                   </button>
@@ -658,7 +715,7 @@ export const ActiveSessionView: React.FC<ActiveSessionViewProps> = ({ onSessionF
                   <button
                     type="button"
                     onClick={isTimerPaused ? resumeTimer : pauseTimer}
-                    className="flex-1 py-3 px-3 rounded-full bg-surface-1 dark:bg-surface-card-dark text-[13px] font-medium text-ink dark:text-ink-dark border border-hairline-light dark:border-hairline-dark hover:bg-hairline-light/30 transition-colors"
+                    className="py-3 px-2 rounded-full bg-surface-1 dark:bg-surface-card-dark text-[13px] font-medium text-ink dark:text-ink-dark border border-hairline-light dark:border-hairline-dark hover:bg-hairline-light/30 active:scale-95 transition-all"
                   >
                     {isTimerPaused ? 'Resume' : 'Pause'}
                   </button>
@@ -666,9 +723,9 @@ export const ActiveSessionView: React.FC<ActiveSessionViewProps> = ({ onSessionF
                   <button
                     type="button"
                     onClick={handleRestComplete}
-                    className="flex-1 py-3 px-4 rounded-full bg-action dark:bg-action-dark text-white text-[13px] font-medium shadow-sm transition-transform active:scale-95"
+                    className="py-3 px-2 rounded-full bg-action dark:bg-action-dark text-white text-[13px] font-medium shadow-sm active:scale-95 transition-all whitespace-nowrap"
                   >
-                    Skip Rest ›
+                    Skip ›
                   </button>
                 </div>
               </motion.div>

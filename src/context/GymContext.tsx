@@ -17,6 +17,7 @@ interface GymContextType {
   updateSettings: (partial: Partial<UserSettings>) => void;
   createOrUpdateRoutine: (routine: Routine) => void;
   deleteRoutine: (routineId: string) => void;
+  deleteHistorySession: (sessionId: string) => void;
   addExerciseToRoutine: (routineId: string, exerciseId: string) => void;
   removeExerciseFromRoutine: (routineId: string, routineExerciseId: string) => void;
   startSession: (routineId: string) => void;
@@ -35,6 +36,7 @@ interface GymContextType {
 const DEFAULT_SETTINGS: UserSettings = {
   gymDays: [], // Empty default
   theme: 'light',
+  weightUnit: 'lbs', // Default to pounds
   defaultRestSeconds: 75,
   soundEnabled: true,
   dailyCreatineGrams: 5,
@@ -147,6 +149,10 @@ export const GymProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const deleteRoutine = useCallback((routineId: string) => {
     setRoutines(prev => prev.filter(r => r.id !== routineId));
+  }, []);
+
+  const deleteHistorySession = useCallback((sessionId: string) => {
+    setHistory(prev => prev.filter(h => h.id !== sessionId));
   }, []);
 
   const addExerciseToRoutine = useCallback((routineId: string, exerciseId: string) => {
@@ -352,6 +358,7 @@ export const GymProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         updateSettings,
         createOrUpdateRoutine,
         deleteRoutine,
+        deleteHistorySession,
         addExerciseToRoutine,
         removeExerciseFromRoutine,
         startSession,
