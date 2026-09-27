@@ -479,7 +479,7 @@ export const SettingsView: React.FC = () => {
 
       {/* Import Modal */}
       {showImportDialog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <div className="w-full max-w-[440px] rounded-3xl bg-surface-1 dark:bg-surface-1-dark border border-hairline-light dark:border-hairline-dark p-6 shadow-2xl">
             <h3 className="text-[18px] font-semibold text-ink dark:text-ink-dark mb-2">
               Import Backup Data

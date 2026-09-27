@@ -407,7 +407,7 @@ export const RoutineEditorModal: React.FC<RoutineEditorModalProps> = ({
 
       {/* Embedded Library Picker Submodal */}
       {isPickingExercise && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-md">
           <div className="w-full max-w-[460px] max-h-[85vh] flex flex-col rounded-3xl bg-surface-1 dark:bg-surface-1-dark border border-hairline-light dark:border-hairline-dark shadow-2xl overflow-hidden">
             <div className="p-4 border-b border-hairline-light/50 dark:border-hairline-dark/50 flex items-center justify-between">
               <h3 className="text-[17px] font-semibold text-ink dark:text-ink-dark">
